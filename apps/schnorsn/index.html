@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receipt OCR</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 1rem; }
+    video, canvas { width: 100%; max-width: 400px; }
+    #controls { margin-top: 1rem; }
+    #result { white-space: pre-wrap; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Receipt OCR</h1>
+  <video id="preview" autoplay playsinline></video>
+  <canvas id="snapshot" width="400" height="300" style="display:none;"></canvas>
+  <div id="controls">
+    <button id="capture">Capture</button>
+  </div>
+  <pre id="result"></pre>
+
+  <script src="https://unpkg.com/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
+  <script>
+    const video = document.getElementById('preview');
+    const canvas = document.getElementById('snapshot');
+    const result = document.getElementById('result');
+    const captureBtn = document.getElementById('capture');
+
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error('Camera access denied', err);
+      }
+    }
+
+    captureBtn.addEventListener('click', async () => {
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      result.textContent = 'Processing...';
+      try {
+        const { data: { text } } = await Tesseract.recognize(canvas, 'eng', { logger: m => console.log(m) });
+        result.textContent = text;
+      } catch (err) {
+        console.error(err);
+        result.textContent = 'Error during OCR';
+      }
+    });
+
+    initCamera();
+  </script>
+</body>
+</html>
